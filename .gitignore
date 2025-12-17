@@ -28,3 +28,6 @@ Thumbs.db
 # Misc
 *.pem
 .claude/
+
+# Personal notes (not for submission)
+Explanation.md
