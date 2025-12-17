@@ -6,22 +6,9 @@ const api = axios.create({
   baseURL: API_URL,
   headers: {
     'Content-Type': 'application/json'
-  }
-});
-
-// Add token to requests if available
-api.interceptors.request.use(
-  (config) => {
-    const token = localStorage.getItem('token');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
   },
-  (error) => {
-    return Promise.reject(error);
-  }
-);
+  withCredentials: true // Important: This sends cookies with requests
+});
 
 // Handle response errors
 api.interceptors.response.use(
@@ -32,8 +19,6 @@ api.interceptors.response.use(
     const isAuthEndpoint = error.config?.url?.includes('/auth/');
 
     if (error.response?.status === 401 && !isAuthEndpoint) {
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
       window.location.href = '/login';
     }
     return Promise.reject(error);

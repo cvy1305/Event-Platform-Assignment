@@ -1,6 +1,14 @@
 import User from '../models/User.js';
 import generateToken from '../utils/generateToken.js';
 
+// Cookie options for httpOnly secure cookies
+const cookieOptions = {
+  httpOnly: true,
+  secure: process.env.NODE_ENV === 'production',
+  sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+  maxAge: 30 * 24 * 60 * 60 * 1000 // 30 days
+};
+
 // @desc    Register new user
 // @route   POST /api/auth/register
 // @access  Public
@@ -25,16 +33,18 @@ export const register = async (req, res) => {
       password
     });
 
-    // Generate token and send response
+    // Generate token
     const token = generateToken(user._id);
+
+    // Set token in httpOnly cookie
+    res.cookie('token', token, cookieOptions);
 
     res.status(201).json({
       success: true,
       data: {
         _id: user._id,
         name: user.name,
-        email: user.email,
-        token
+        email: user.email
       }
     });
   } catch (error) {
@@ -80,17 +90,41 @@ export const login = async (req, res) => {
       });
     }
 
-    // Generate token and send response
+    // Generate token
     const token = generateToken(user._id);
+
+    // Set token in httpOnly cookie
+    res.cookie('token', token, cookieOptions);
 
     res.status(200).json({
       success: true,
       data: {
         _id: user._id,
         name: user.name,
-        email: user.email,
-        token
+        email: user.email
       }
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+};
+
+// @desc    Logout user / clear cookie
+// @route   POST /api/auth/logout
+// @access  Private
+export const logout = async (req, res) => {
+  try {
+    res.cookie('token', '', {
+      httpOnly: true,
+      expires: new Date(0)
+    });
+
+    res.status(200).json({
+      success: true,
+      message: 'Logged out successfully'
     });
   } catch (error) {
     res.status(500).json({
