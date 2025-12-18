@@ -7,16 +7,33 @@ import connectCloudinary from './config/cloudinary.js';
 import authRoutes from './routes/authRoutes.js';
 import eventRoutes from './routes/eventRoutes.js';
 
-// Load environment variables
+// Load environment variables (only works locally, Vercel uses its own env system)
 dotenv.config();
 
-// Connect to database
-connectDB();
-
-// Connect to Cloudinary
-connectCloudinary();
-
 const app = express();
+
+// Connect to database and Cloudinary (wrapped for serverless)
+let isInitialized = false;
+const initializeServices = async () => {
+  if (!isInitialized) {
+    await connectDB();
+    connectCloudinary();
+    isInitialized = true;
+  }
+};
+
+// Initialize on first request (serverless-friendly)
+app.use(async (req, res, next) => {
+  try {
+    await initializeServices();
+    next();
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Failed to connect to database'
+    });
+  }
+});
 
 // Middleware
 app.use(cors({
